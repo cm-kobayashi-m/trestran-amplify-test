@@ -1,6 +1,7 @@
 version: 1
 applications:
-  - frontend:
+  - appRoot: lisa-web
+    frontend:
       phases:
         preBuild:
           commands:
