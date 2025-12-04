@@ -33,11 +33,14 @@ Amplify は指定されたルートディレクトリの `package.json` を見�
 
 ## ディレクトリ構成（モノレポの場合）
 
+amplify.yml はリポジトリルートでもアプリディレクトリ内でもどちらでも動作します。
+
 ```
 my-project/
-├── amplify.yml             # ← リポジトリルートに配置
+├── amplify.yml             # ← どちらでもOK
 ├── api/                    # バックエンド等
 ├── web/                    # Next.js アプリ
+│   ├── amplify.yml         # ← どちらでもOK
 │   ├── app/
 │   ├── next.config.mjs
 │   ├── package.json
@@ -64,14 +67,16 @@ const nextConfig = {
 export default nextConfig
 ```
 
-### 2. amplify.yml の作成（リポジトリルート）
+### 2. amplify.yml の作成
 
-**モノレポの場合は `applications` キーが必須**：
+**モノレポの場合は `applications` キーと `appRoot` が必須**。
+
+> ⚠️ **重要**: `appRoot` は amplify.yml の配置場所に関係なく、**常にリポジトリルートからの絶対パス**で指定する必要があります。
 
 ```yaml
 version: 1
 applications:
-  - appRoot: web              # Next.js があるディレクトリ
+  - appRoot: web              # リポジトリルートからのパス（必須）
     frontend:
       phases:
         preBuild:
@@ -195,7 +200,18 @@ aws amplify create-app \
 | **Amplifyコンソール** | モノレポ有効 + ルートディレクトリ指定 |
 | **amplify.yml** | `applications` キー + `appRoot` 指定 |
 
+### appRoot の指定ルール
+
+| amplify.yml の場所 | appRoot の値 |
+|-------------------|--------------|
+| リポジトリルート | `web`（リポジトリルートからのパス） |
+| `web/` ディレクトリ内 | `web`（リポジトリルートからのパス） |
+
+> ⚠️ `appRoot: ./` や相対パスは**使用不可**。常にリポジトリルートからの絶対パスを指定。
+
 ### エラー例
+
+#### `applications` キーがない
 
 ```
 CustomerError: Monorepo spec provided without "applications" key
@@ -204,6 +220,16 @@ CustomerError: Monorepo spec provided without "applications" key
 **原因**: コンソールでモノレポを有効にしたが、amplify.yml に `applications` キーがない
 
 **解決**: amplify.yml に `applications` と `appRoot` を追加
+
+#### `appRoot` がない・無効
+
+```
+CustomerError: Invalid Monorepo spec provided. The "appRoot" key needs to be a string
+```
+
+**原因**: `applications` キーはあるが `appRoot` がない、または無効な値
+
+**解決**: `appRoot` にリポジトリルートからのパスを指定（例: `appRoot: web`）
 
 ---
 
@@ -238,6 +264,19 @@ preBuild:
 
 **解決方法**:
 - コンソールでモノレポルートディレクトリに Next.js の `package.json` があるディレクトリを指定
+
+---
+
+## まとめ
+
+### モノレポで Next.js SSR をデプロイするチェックリスト
+
+- [ ] `next.config.mjs` に `output: 'standalone'` を追加
+- [ ] `amplify.yml` に `applications` キーと `appRoot` を設定
+- [ ] `appRoot` はリポジトリルートからの絶対パス
+- [ ] Amplify コンソールでモノレポを有効化
+- [ ] コンソールでルートディレクトリを指定
+- [ ] フレームワークが「Next.js」として検出されていることを確認
 
 ---
 
